@@ -16,7 +16,6 @@ output:
   path:
   include:
     patterns:
-      - png
       - xlsx
       
 
