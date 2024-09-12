@@ -1,0 +1,28 @@
+name: "ml_smart_docker"
+author: Suxing Liu
+public: True
+clone: True
+image: computationalplantscience/ml_smart_docker:tagname
+commands: /opt/smart/ml_smart_pipeline.sh
+
+input:
+  kind: directory
+  path:
+  filetypes:
+    - jpg
+    - png
+    
+output:
+  path:
+  include:
+    patterns:
+      - png
+      - xlsx
+      
+
+
+jobqueue:
+  walltime: "01:00:00"
+  memory: "16GB"
+  processes: 1
+  cores: 12
