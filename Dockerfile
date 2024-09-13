@@ -9,7 +9,7 @@
 #docker build -t test_docker -f Dockerfile .
 #docker run -v /input:/images -it test_docker
 #cd /opt/smart/
-#python3 /opt/code/ml_smart.py -p /input/ 
+#python3 /opt/code/ml_smart.py -p /input/ -o /output/
 
 
 FROM ubuntu:20.04
