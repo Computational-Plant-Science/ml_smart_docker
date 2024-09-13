@@ -2223,8 +2223,7 @@ def write_excel_output(trait_file, result_list):
         #sheet_leaf = wb.create_sheet()
         
         #sheet_leaf.delete_rows(2, sheet_leaf.max_row+1) # for entire sheet
-        
-        
+
 
     else:
         # Keep presets
@@ -2256,9 +2255,6 @@ def write_excel_output(trait_file, result_list):
     for row in result_list:
         sheet.append(row)
    
-    #for row in result_list_leaf:
-        #sheet_leaf.append(row)
-    
 
     #save the csv file
     wb.save(trait_file)
@@ -2435,7 +2431,12 @@ if __name__ == '__main__':
 
     write_excel_output(trait_file, result_list)
 
-
+    
+    if os.path.exists(trait_file):
+        
+        print("Result file was saved at {}\n".format(trait_file))
+    else:
+        print("Error in saving Result file\n")
     
     
     #####################################################################################

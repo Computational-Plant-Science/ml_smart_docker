@@ -1,9 +1,8 @@
 name: "ml_smart_docker"
 author: Suxing Liu
 public: True
-clone: True
 image: computationalplantscience/ml_smart_docker
-commands: /opt/smart/ml_smart_pipeline.sh
+commands: /opt/code/ml_smart_pipeline.sh
 
 input:
   kind: directory
@@ -25,3 +24,8 @@ jobqueue:
   memory: "16GB"
   processes: 1
   cores: 12
+
+
+env:
+  - LC_ALL=C.UTF-8
+  - LANG=C.UTF-8
