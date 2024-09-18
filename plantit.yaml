@@ -1,7 +1,7 @@
 name: "ml_smart_docker"
 author: Suxing Liu
 public: True
-image: computationalplantscience/ml_smart_docker
+image: docker://computationalplantscience/ml_smart_docker
 commands: /opt/code/ml_smart_pipeline.sh
 
 input:
