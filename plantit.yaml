@@ -16,8 +16,9 @@ output:
   include:
     patterns:
       - xlsx
+      - png
       
-
+logo: media/Smart.png
 
 jobqueue:
   walltime: "01:00:00"

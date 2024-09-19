@@ -2278,7 +2278,7 @@ if __name__ == '__main__':
     ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 1000000,  help = 'max size of object to be segmented.')
     ap.add_argument('-md', '--min_dist', dest = "min_dist", type = int, required = False, default = 35,  help = 'distance threshold of watershed segmentation.')
     ap.add_argument("-da", "--diagonal", dest = "diagonal", type = float, required = False,  default = math.sqrt(2), help = "diagonal line length(cm) of indiviudal color checker module")
-    ap.add_argument("-d", '--debug', dest = 'debug', type = int, required = False,  default = 0, help = "Whehter save image results or not, 1 = yes, 0 = no")
+    ap.add_argument("-d", '--debug', dest = 'debug', type = int, required = False,  default = 1, help = "Whehter save image results or not, 1 = yes, 0 = no")
     #ap.add_argument("-cc", "--cue_color", dest = "cue_color", type = int, required = False,  default = 0, help="use color cue to detect plant object")
     #ap.add_argument("-cl", "--cue_loc", dest = "cue_loc", type = int, required = False,  default = 0, help="use location cue to detect plant object")
     #ap.add_argument("-ob", "--out_boundary", dest = "out_boundary", type = int, required = False,  default = 0, help="whether the plant object was out of the image boudary or not, 1 yes, 0 no, default 0")
