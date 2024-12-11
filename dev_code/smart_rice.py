@@ -13,7 +13,7 @@ Created: 2024-11-29
 
 USAGE:
 
-    python3 ml_smart.py -p /input/ -o /output/
+    python3 smart_rice.py -p /input/ -o /output/
 
 '''
 
@@ -1717,6 +1717,216 @@ def get_contours(image_thresh):
 
 
 
+def region_extracted(orig, x, y, w, h):
+    
+    """compute rect region based on left top corner coordinates and dimension of the region
+    
+    Inputs: 
+    
+        orig: image
+        
+        x, y: left top corner coordinates 
+        
+        w, h: dimension of the region
+
+    Returns:
+    
+        roi: region of interest
+        
+    """   
+    roi = orig[y:y+h, x:x+w]
+    
+    return roi
+
+
+
+
+# Color checker detection
+def color_checker_detection(roi_image_checker, result_path):
+    
+    
+    
+    
+    orig_hsv = cv2.cvtColor(roi_image_checker.copy(), cv2.COLOR_BGR2HSV)
+
+    gray_hsv = cv2.cvtColor(orig_hsv, cv2.COLOR_BGR2GRAY)
+
+    thresh_checker = cv2.threshold(gray_hsv, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    
+    #orig = sticker_crop_img.copy()
+    
+    if np.count_nonzero(thresh_checker) > 0:
+    
+        thresh_checker = clear_border(thresh_checker)
+
+    
+
+    #color clustering based plant object segmentation
+    #thresh_checker = color_cluster_seg(roi_image_checker.copy(), args_colorspace, args_channels, args_num_clusters)
+    
+    #thresh_checker = color_cluster_seg(roi_image_checker.copy(), str('lab'), str('0'), args_num_clusters)
+    
+    ####################################################################################
+    checker_width_rec = []
+    checker_height_rec = []
+    
+    
+    # detect color checker area and get mask of checker area 
+    # apply connected component analysis to the thresholded image
+    (numLabels, labels, stats, centroids) = cv2.connectedComponentsWithStats(thresh_checker, 4, cv2.CV_32S)
+    
+    # initialize an output mask 
+    mask_checker = np.zeros(gray_hsv.shape, dtype="uint8")
+
+    # loop over the number of unique connected component labels
+    for i in range(1, numLabels):
+
+        
+        # extract the connected component statistics and centroid for
+        # the current label
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        
+        #print("idx = {}, w = {}, h = {}\n".format(i, w, h))
+        
+        area = stats[i, cv2.CC_STAT_AREA]
+        
+        (cX, cY) = centroids[i]
+        
+        # ensure the width, height, and area are all neither too small
+        # nor too big
+        keepWidth = w > 30 and w < 1500
+        keepHeight = h > 30 and h < 1500
+        keepArea = area > 900 and area < 200000
+        # ensure the connected component we are examining passes all three tests
+        #if all((keepWidth, keepArea)):
+        
+        text = "{}".format(i)
+        
+        ratio_w_h = w/h
+        
+        if keepArea and (ratio_w_h < 1.8):
+            # construct a mask for the current connected component and
+            # then take the bitwise OR with the mask
+            #print("[INFO] keeping connected component '{}'".format(i))
+            componentMask = (labels == i).astype("uint8") * 255
+            mask_checker = cv2.bitwise_or(mask_checker, componentMask)
+            
+            checker_width_rec.append(w)
+            checker_height_rec.append(h)
+            
+            #color_checker_detected = cv2.putText(roi_image_checker, text, (cX, cY+0), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    
+    # apply individual object mask
+    color_checker_masked = cv2.bitwise_and(roi_image_checker.copy(), roi_image_checker.copy(), mask = mask_checker)
+    
+    
+    
+    ################################################################################################
+    # find contours in the masked checker image and obtain the color value and name 
+    cnts = cv2.findContours(mask_checker.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    cnts = imutils.grab_contours(cnts)
+    
+    
+    # initialize the shape detector and color labeler
+    cl = ColorLabeler()
+    
+    lab_image_checker = cv2.cvtColor(roi_image_checker.copy(), cv2.COLOR_BGR2LAB)
+    
+    std_color_value = []
+    
+    checker_color_value = []
+    
+    color_name_list = []
+    
+    green_checker_idx = []
+    
+    # loop over the contours
+    for idx, c in enumerate(cnts):
+        
+        # compute the center of the contour
+        M = cv2.moments(c)
+        cX = int((M["m10"] / M["m00"]))
+        cY = int((M["m01"] / M["m00"]))
+        # detect the shape of the contour and label the color
+
+        (color_name, color_value) = cl.label(lab_image_checker, c)
+        
+        if idx < 1:
+            std_color_value.append(cl.lab)
+        
+        checker_color_value.append(np.array(color_value).reshape((1, 3)))
+        
+        color_name_list.append(color_name)
+        
+        
+        # draw the contour (x, y)-coordinates  and the name of the color on the image
+        c = c.astype("float")
+        c = c.astype("int")
+        text = "{}".format(idx)
+        text_color = "{} {}".format(idx, color_name)
+        
+        color_checker_detected = cv2.drawContours(roi_image_checker, [c], -1, (0, 255, 0), 2)
+        
+        color_checker_detected = cv2.putText(roi_image_checker, text_color, (cX - 20, cY + 0), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+        
+        
+        
+        if color_name == "yellow green":
+            
+            #color_checker_detected = cv2.putText(roi_image_checker, text, (cX-80, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            
+            green_checker_idx.append(idx)
+        
+        
+        
+    
+    # Convert list of array into list
+    std_color_value = [item for t in std_color_value for item in t]
+    #std_color_value = [l.tolist() for l in std_color_value]
+    
+    print("color_name_list = {}\n".format(color_name_list))
+    
+
+    
+    ################################################################################################
+    '''
+    result_file = (result_path + 'mask_checker.jpg')
+    #print(filename)
+    cv2.imwrite(result_file, mask_checker)
+    
+    
+    result_file = (result_path + 'color_checker_detected.jpg')
+    #print(filename)
+    cv2.imwrite(result_file, color_checker_detected)
+    
+    
+    
+    #thresh = ~thresh
+    # save segmentation result
+    result_file = (result_path + 'color_checker_masked.jpg')
+    #print(filename)
+    cv2.imwrite(result_file, color_checker_masked)
+    '''
+    
+
+    #compute the diagonal path length of each color checker
+    avg_width_checker = np.average(checker_width_rec)
+    avg_height_checker = np.average(checker_height_rec)
+    
+    #avg_diagonal_length = 237.0, max_width_checker = 235, max_height_checker = 239
+    
+    print("checker_width_rec = {}, checker_height_rec = {}\n".format(avg_width_checker, avg_height_checker))
+    
+    
+    return avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked
+    
+
+
+
 
 # compute all the traits
 def extract_traits(image_file, result_path):
@@ -1776,20 +1986,41 @@ def extract_traits(image_file, result_path):
         
         print("Image file size: {} MB, brightness: {:.2f}, dimension: {} X {}, channels : {}\n".format(str(file_size), b_value, img_height, img_width, img_channels))
     
-    '''
-    ##################################################################################
-    # circle marker detection
-    (diameter_circle, ROI_region, circle_detection_img) = circle_detection(orig) 
+    ####################################################
+    #Color checker detection
+    
+    #define color checker region
+    x = int(img_width*0.45)
+    y = int(img_height*0.02)
+    w = int(img_width*0.15)
+    h = int(img_height*0.15)
 
-    # save result
-    result_file = (result_path + base_name + '_circle_template' + file_extension)
-    cv2.imwrite(result_file, circle_detection_img)
+    roi_image_checker = region_extracted(orig, x, y, w, h)
     
     
-    #orig = sticker_crop_img.copy()
-    result_img_path = result_path + 'ROI_region.png'
-    cv2.imwrite(result_img_path, ROI_region)
-    '''
+    (avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(roi_image_checker, result_path)
+    
+    if args["debug"] == 1:
+
+        file_extension = '.png'
+
+        mkpath = os.path.dirname(result_path) +'/' + basename 
+
+        mkdir(mkpath)
+
+        image_save_path = mkpath + '/'
+
+        print("image_save_path: {}\n".format(image_save_path))
+
+        # save segmentation result
+        #write_image_output(mask_checker, image_save_path, basename, '_mask_checker', file_extension)
+
+        write_image_output(color_checker_detected, image_save_path, basename, '_color_checker_detected', file_extension)
+
+        #write_image_output(color_checker_masked, image_save_path, basename, '_color_checker_masked', file_extension)
+
+    
+
     ##########################################################################
     #Plant region detection (defined as ROI_region)
 
