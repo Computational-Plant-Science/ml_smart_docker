@@ -18,7 +18,7 @@ USAGE:
 '''
 
 # import the necessary packages
-import subprocess, os, glob
+import subprocess, os, glob, sys
 import utils
 
 from collections import Counter
@@ -488,7 +488,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     
     ###################################################################################################
-    size_kernel = 5
+    size_kernel = 1
     
     #if mask contains mutiple non-connected parts, combine them into one. 
     (contours, hier) = cv2.findContours(img_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -649,6 +649,8 @@ def watershed_seg(orig, thresh, min_distance_value):
     D = ndimage.distance_transform_edt(thresh)
     
     localMax = peak_local_max(D, indices = False, min_distance = min_distance_value,  labels = thresh)
+    
+    #localMax = peak_local_max(D, min_distance = min_distance_value,  labels = thresh)
      
     # perform a connected component analysis on the local peaks,
     # using 8-connectivity, then appy the Watershed algorithm
@@ -2296,17 +2298,28 @@ if __name__ == '__main__':
     files = [f for fs in [glob.glob(pattern) for pattern in patterns] for f in fs]
     
 
+    if len(files) > 0:
+        
+        # check image file format 
+        extension_type = check_file_type(file_path, None)
+        
+        print("Number of input images: {}, Image format: {}\n".format(len(files), extension_type))
     
+    else:
+        
+        print("Input folder was empty...\n")
+        
+        sys.exit(1)
     
     # check image file format 
-    extension_type = check_file_type(file_path, None)
+    #extension_type = check_file_type(file_path, None)
     
     
-    print("Input image format: {}\n".format(extension_type))
+    #print("Input image format: {}\n".format(extension_type))
     
-    print("Input images: {}\n".format(files))
+    #print("Input images: {}\n".format(files))
     
-    
+    '''
     # result path
     result_path = args["output_path"] if args["output_path"] is not None else file_path
 
@@ -2314,7 +2327,7 @@ if __name__ == '__main__':
 
     # printout result path
     print("Output path: {}\n".format(result_path))
-    
+    '''
     
     ########################################################################
     #parameters
@@ -2369,6 +2382,17 @@ if __name__ == '__main__':
                             hex_colors[2], color_ratio[2], color_diff_list[2]])
         
         
+        # local test only
+        # result path
+        result_path = args["output_path"] + basename if args["output_path"] is not None else file_path
+
+        result_path = os.path.join(result_path, '')
+
+        # printout result path
+        print("Output path: {}\n".format(result_path))
+    
+    
+        
         if args["debug"] == 1:
             '''
             mkpath = os.path.dirname(result_path) + '/' + basename + '/'
@@ -2405,7 +2429,18 @@ if __name__ == '__main__':
             plt.savefig(result_img_path)
             
             
-        
+            ########################################################################################
+            #trait_file = (result_path + str(pathlib.PurePath(result_path).name) + '_trait.xlsx')
+            trait_file = (result_path + basename + '_trait.xlsx')
+
+            write_excel_output(trait_file, result_list)
+
+            
+            if os.path.exists(trait_file):
+                
+                print("Result file was saved at {}\n".format(trait_file))
+            else:
+                print("Error in saving Result file\n")
 
 
     #########################################################################
@@ -2424,7 +2459,7 @@ if __name__ == '__main__':
     
     
 
-    
+    '''
     ########################################################################################
     #trait_file = (result_path + str(pathlib.PurePath(result_path).name) + '_trait.xlsx')
     trait_file = (result_path + 'trait.xlsx')
@@ -2438,7 +2473,7 @@ if __name__ == '__main__':
     else:
         print("Error in saving Result file\n")
     
-    
+    '''
     #####################################################################################
     # grants read and write access to all result folders
     print("Make result files accessible...\n")

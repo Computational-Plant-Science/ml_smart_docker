@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE:
 
-python3 gamma_correction.py -p /home/suxingliu/model-scan/test-image/ -ft jpg -gv 0.7
+     python3 gamma_correction.py -p /home/suxingliu/model-scan/test-image/ -ft jpg -gv 0.7
 
 
 argument:
@@ -129,15 +129,12 @@ def gamma_correction(image_file):
     
     adjusted = adjust_gamma(image, gamma=gamma)
     
+    enhanced_image = image_enhance(adjusted)
     
-    
-    
-    #enhanced_image = image_enhance(adjusted)
-    
-    enhanced_image = image_enhance(image)
+    #enhanced_image = image_enhance(image)
 
     # save result as images for reference
-    cv2.imwrite(result_img_path,enhanced_image)
+    cv2.imwrite(result_img_path, enhanced_image)
 
 
 

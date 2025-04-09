@@ -850,7 +850,7 @@ def u2net_color_cluster(image_file):
     # PhotoRoom Remove Background API
     
     # AI pre-trained model to segment plant object, test function
-    #roi_image = remove(roi_image).copy()
+    roi_image = remove(roi_image).copy()
 
     #result_img_path = result_path + 'roi_image.png'
     #cv2.imwrite(result_img_path, roi_image)
