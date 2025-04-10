@@ -1112,7 +1112,7 @@ def comp_external_contour(orig, thresh):
                 print("Leaf area = {0:.2f}... \n".format(area))
                 
                 
-                hull = cv2.convexHull(c)
+                #hull = cv2.convexHull(c)
                 hull_area = cv2.contourArea(hull)
                 compactness = float(area)/hull_area
                 print("compactness = {0:.2f}... \n".format(compactness))
@@ -1143,7 +1143,7 @@ def comp_external_contour(orig, thresh):
         
         
             
-    return trait_img, area, compactness, w, h, longest_dimension
+    return trait_img, area, hull_area, compactness, w, h, longest_dimension
     
     
     
@@ -1882,7 +1882,7 @@ def extract_traits(image_file, result_path):
         
         ###########################################################################################################
          #compute external contour, shape info  
-        (trait_img, area, compactness, max_width, max_height, longest_dimension) = comp_external_contour(ROI_region, thresh)
+        (trait_img, area, hull_area, compactness, max_width, max_height, longest_dimension) = comp_external_contour(ROI_region, thresh)
 
         #compactness = min(max_width,max_height)/max(max_width,max_height)
         
@@ -2185,7 +2185,7 @@ def extract_traits(image_file, result_path):
     
 
     
-    return image_file_name, area, compactness, max_width, max_height, longest_dimension, hex_colors, color_ratio, color_diff_list, thresh, roi_image, trait_img, img_as_ubyte(image_skeleton), labeled_img, counts.values(), masked_image_ori, segmented_image_BRG
+    return image_file_name, area, hull_area, compactness, max_width, max_height, longest_dimension, hex_colors, color_ratio, color_diff_list, thresh, roi_image, trait_img, img_as_ubyte(image_skeleton), labeled_img, counts.values(), masked_image_ori, segmented_image_BRG
     
 
 
@@ -2237,19 +2237,20 @@ def write_excel_output(trait_file, result_list):
 
         sheet.cell(row = 1, column = 1).value = 'filename'
         sheet.cell(row = 1, column = 2).value = 'leaf_area'
-        sheet.cell(row = 1, column = 3).value = 'compactness'
-        sheet.cell(row = 1, column = 4).value = 'max_width'
-        sheet.cell(row = 1, column = 5).value = 'max_height'
-        sheet.cell(row = 1, column = 6).value = 'longest_dimension'
-        sheet.cell(row = 1, column = 7).value = 'color_cluster_1_hex_value'
-        sheet.cell(row = 1, column = 8).value = 'color_cluster_1_ratio'
-        sheet.cell(row = 1, column = 9).value = 'color_cluster_1_difference'
-        sheet.cell(row = 1, column = 10).value = 'color_cluster_2_hex_value'
-        sheet.cell(row = 1, column = 11).value = 'color_cluster_2_ratio'
-        sheet.cell(row = 1, column = 12).value = 'color_cluster_2_difference'
-        sheet.cell(row = 1, column = 13).value = 'color_cluster_3_hex_value'
-        sheet.cell(row = 1, column = 14).value = 'color_cluster_3_ratio'
-        sheet.cell(row = 1, column = 15).value = 'color_cluster_3_difference'
+        sheet.cell(row = 1, column = 3).value = 'hull_area'
+        sheet.cell(row = 1, column = 4).value = 'compactness'
+        sheet.cell(row = 1, column = 5).value = 'max_width'
+        sheet.cell(row = 1, column = 6).value = 'max_height'
+        sheet.cell(row = 1, column = 7).value = 'longest_dimension'
+        sheet.cell(row = 1, column = 8).value = 'color_cluster_1_hex_value'
+        sheet.cell(row = 1, column = 9).value = 'color_cluster_1_ratio'
+        sheet.cell(row = 1, column = 10).value = 'color_cluster_1_difference'
+        sheet.cell(row = 1, column = 11).value = 'color_cluster_2_hex_value'
+        sheet.cell(row = 1, column = 12).value = 'color_cluster_2_ratio'
+        sheet.cell(row = 1, column = 13).value = 'color_cluster_2_difference'
+        sheet.cell(row = 1, column = 14).value = 'color_cluster_3_hex_value'
+        sheet.cell(row = 1, column = 15).value = 'color_cluster_3_ratio'
+        sheet.cell(row = 1, column = 16).value = 'color_cluster_3_difference'
         
         #return image_file_name, area, compactness, max_width, max_height, n_leaves, hex_colors, color_ratio, color_diff_list
         
@@ -2372,10 +2373,10 @@ if __name__ == '__main__':
         print("Processing image {} ... \n".format(file_path))
         
         # main pipeline
-        (filename, area, compactness, max_width, max_height, longest_dimension, hex_colors, color_ratio, color_diff_list, thresh, roi_image, trait_img, image_skeleton, labeled_img, counts_values, masked_image_ori, segmented_image_BRG) = extract_traits(image, file_path)
+        (filename, area, hull_area, compactness, max_width, max_height, longest_dimension, hex_colors, color_ratio, color_diff_list, thresh, roi_image, trait_img, image_skeleton, labeled_img, counts_values, masked_image_ori, segmented_image_BRG) = extract_traits(image, file_path)
         
         
-        result_list.append([filename, area, compactness, max_width, max_height, longest_dimension, 
+        result_list.append([filename, area, hull_area, compactness, max_width, max_height, longest_dimension, 
                             hex_colors[0], color_ratio[0], color_diff_list[0], 
                             hex_colors[1], color_ratio[1], color_diff_list[1], 
                             hex_colors[2], color_ratio[2], color_diff_list[2]])
