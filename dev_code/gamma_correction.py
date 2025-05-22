@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE:
 
-     python3 gamma_correction.py -p /home/suxingliu/model-scan/test-image/ -ft jpg -gv 0.7
+     python3 gamma_correction.py -p /input/ -ft jpg -gv 0.7
 
 
 argument:

@@ -1745,8 +1745,6 @@ def region_extracted(orig, x, y, w, h):
 def color_checker_detection(roi_image_checker, result_path):
     
     
-    
-    
     orig_hsv = cv2.cvtColor(roi_image_checker.copy(), cv2.COLOR_BGR2HSV)
 
     gray_hsv = cv2.cvtColor(orig_hsv, cv2.COLOR_BGR2GRAY)
@@ -1928,6 +1926,100 @@ def color_checker_detection(roi_image_checker, result_path):
 
 
 
+def thresh_adjust(thresh, img):
+
+    thresh_adjust = thresh
+    
+    # get the dimension of the image
+    img_height, img_width, img_channels = img.shape
+    
+    #(h, w) = img.shape[:2]
+
+    #######################################################################################
+    # mutiple objects detection
+    
+    n_object = 2
+    
+    # find contours in the thresholded image
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    cnts = imutils.grab_contours(cnts)
+    
+    # sort the contour based on area size from largest to smallest, and get the first two max contours
+    cnts_sorted = sorted(cnts, key = cv2.contourArea, reverse = True)[0:n_object]
+
+    # sort the contours from left to right
+    cnts_sorted = sort_contours(cnts_sorted, method = "left-to-right")
+    
+    
+    # initialize background image to draw the contours
+    img_overlay_bk = img
+    
+ 
+    
+    extBot_rec = []
+
+    thresh_tmp = np.zeros(img.shape, np.uint8)
+    
+    
+    # loop over the selected contours
+    for idx, c in enumerate(cnts_sorted):
+        
+        extLeft = tuple(c[c[:,:,0].argmin()][0])
+        extRight = tuple(c[c[:,:,0].argmax()][0])
+        extTop = tuple(c[c[:,:,1].argmin()][0])
+        extBot = tuple(c[c[:,:,1].argmax()][0])
+        
+        extBot_rec.append(extBot)
+        
+        print("extBot = {}\n".format(extBot))
+        
+        print("extBot[0] = {}\n".format(extBot[0]))
+        
+        print("extBot[1] = {}\n".format(extBot[1]))
+        
+
+        offset = 80
+        
+        if idx < 1:
+            # Rectangle parameters
+            start_point = (0, extBot[1] - offset)  # (x, y) coordinates of the top-left corner
+            end_point = (int(img_width*0.5), img_height)  # (x, y) coordinates of the bottom-right corner
+        else:
+            
+            start_point = (int(img_width*0.5), extBot[1] - offset)  
+            end_point = (img_width, img_height)  
+        
+        print("start_point = {}, end_point ={}\n".format(start_point, end_point))
+        
+        color = (0, 0, 0)  # 
+        thickness = -1  # Line thickness in pixels, filled
+        
+        # generate individual mask 
+        mask_seg = cv2.drawContours(thresh_tmp, [c], -1, (255,255,255), -1)
+
+        # Draw the rectangle
+        mask_seg = cv2.rectangle(thresh_tmp, start_point, end_point, color, thickness)
+
+
+        
+        
+    # convert the mask image to gray format
+    mask_seg_gray = cv2.cvtColor(mask_seg, cv2.COLOR_BGR2GRAY)
+    
+    # convert mask to binary
+    thresh_adjust = cv2.threshold(mask_seg_gray, 127, 255, cv2.THRESH_BINARY)[1]        
+        
+
+    print("extBot_rec = {}\n".format(extBot_rec))
+    
+
+    return thresh_adjust
+
+
+
+
+
 # compute all the traits
 def extract_traits(image_file, result_path):
 
@@ -1990,15 +2082,41 @@ def extract_traits(image_file, result_path):
     #Color checker detection
     
     #define color checker region
-    x = int(img_width*0.45)
-    y = int(img_height*0.02)
-    w = int(img_width*0.15)
-    h = int(img_height*0.15)
+    x = int(img_width*0.46)
+    y = int(img_height*0.056)
+    w = int(img_width*0.20)
+    h = int(img_height*0.157)
 
     roi_image_checker = region_extracted(orig, x, y, w, h)
     
-    
     (avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(roi_image_checker, result_path)
+    
+    '''
+    ###################################################################
+    x = int(img_width*0.16)
+    y = int(img_height*0.0)
+    w = int(img_width*0.70)
+    h = int(img_height*0.5)
+    
+    checker_region = region_extracted(orig, x, y, w, h)
+    
+    colorspace_par = str("HSV")
+    
+    channel_par = str("2")
+
+    #thresh_roichecker = color_cluster_seg(region_extracted(orig, x, y, w, h), colorspace_par, channel_par, 2)
+    
+    #masked_checker_region = remove(region_extracted(orig, x, y, w, h))
+    
+    thresh_roichecker = remove(checker_region, only_mask = True)
+    
+    #apply the mask to get the segmentation of plant
+    masked_checker_region = cv2.bitwise_and(checker_region, checker_region, mask = thresh_roichecker)
+    
+    (avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(masked_checker_region, result_path)
+    '''
+
+    
     
     if args["debug"] == 1:
 
@@ -2013,22 +2131,36 @@ def extract_traits(image_file, result_path):
         print("image_save_path: {}\n".format(image_save_path))
 
         # save segmentation result
-        #write_image_output(mask_checker, image_save_path, basename, '_mask_checker', file_extension)
+        write_image_output(mask_checker, image_save_path, basename, '_mask_checker', file_extension)
 
         write_image_output(color_checker_detected, image_save_path, basename, '_color_checker_detected', file_extension)
 
-        #write_image_output(color_checker_masked, image_save_path, basename, '_color_checker_masked', file_extension)
+        write_image_output(color_checker_masked, image_save_path, basename, '_color_checker_masked', file_extension)
 
+        write_image_output(roi_image_checker, image_save_path, basename, '_roi_image_checker', file_extension)
+        
+        #write_image_output(ai_seg, image_save_path, basename, '_ai_seg', file_extension)
+        
+    
+    
+    #######################################################################
+    
+
+    
+    
+    
+    
+    
     
 
     ##########################################################################
     #Plant region detection (defined as ROI_region)
-
+    
     #roi_image = ROI_region.copy()
     
     ROI_region = orig.copy()
     
-    #roi_image = orig.copy()
+    roi_image = orig.copy()
     
 
     
@@ -2036,7 +2168,7 @@ def extract_traits(image_file, result_path):
     # PhotoRoom Remove Background API
     
     # AI pre-trained model to segment plant object, test function
-    roi_image = remove(ROI_region).copy()
+    #roi_image = remove(ROI_region).copy()
     
     #orig = roi_image.copy()
 
@@ -2066,10 +2198,35 @@ def extract_traits(image_file, result_path):
     thresh = color_cluster_seg(roi_image, args_colorspace, args_channels, 2)
     
     
+    
+    thresh = thresh_adjust(thresh, roi_image)
+    
+    #########################################################################################
+    
+    if args["debug"] == 1:
+
+        file_extension = '.png'
+
+        mkpath = os.path.dirname(result_path) +'/' + basename 
+
+        mkdir(mkpath)
+
+        image_save_path = mkpath + '/'
+
+        print("image_save_path: {}\n".format(image_save_path))
+
+        # save segmentation result
+        write_image_output(thresh, image_save_path, basename, '_thresh', file_extension)
+        
+        # save segmentation result
+        #write_image_output(thresh_test, image_save_path, basename, '_thresh_test', file_extension)
+    
+    
+    
     #######################################################################################
     # mutiple objects detection
     
-    n_object = 3
+    n_object = 2
     
     # find contours in the thresholded image
     cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -2110,6 +2267,17 @@ def extract_traits(image_file, result_path):
     for idx, c in enumerate(cnts_sorted):
         
         img_thresh = np.zeros(orig.shape, np.uint8)
+        
+        extLeft = tuple(c[c[:,:,0].argmin()][0])
+        extRight = tuple(c[c[:,:,0].argmax()][0])
+        extTop = tuple(c[c[:,:,1].argmin()][0])
+        extBot = tuple(c[c[:,:,1].argmax()][0])
+
+        img_overlay = cv2.circle(img_overlay_bk, extLeft, 20, (0, 0, 255), -1)
+        img_overlay = cv2.circle(img_overlay_bk, extRight, 20, (0, 0, 255), -1)
+        img_overlay = cv2.circle(img_overlay_bk, extTop, 20, (0, 0, 255), -1)
+        img_overlay = cv2.circle(img_overlay_bk, extBot, 20, (0, 0, 255), -1)
+        
         
         # compute the center of the contour
         M = cv2.moments(c)
@@ -2179,7 +2347,7 @@ def extract_traits(image_file, result_path):
     color_diff_list_rec = []
 
 
-    print("{} objectes are detected\n".format(len(img_thresh_rec)))
+    print("{} objects are detected\n".format(len(img_thresh_rec)))
     
     
     for idx, current_thresh in enumerate(img_thresh_rec):
@@ -2554,7 +2722,7 @@ if __name__ == '__main__':
                                                                        + ' 1 is the second channel, etc. E.g., if BGR color space is used, "02" ' 
                                                                        + 'selects channels B and R. (default "all")')
     ap.add_argument('-n', '--num_clusters', dest = "num_clusters", type = int, required = False, default = 4,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
-    ap.add_argument('-min', '--min_size', dest = "min_size", type = int, required = False, default = 15000,  help = 'min size of object to be segmented.')
+    ap.add_argument('-min', '--min_size', dest = "min_size", type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
     ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 1000000,  help = 'max size of object to be segmented.')
     ap.add_argument('-md', '--min_dist', dest = "min_dist", type = int, required = False, default = 35,  help = 'distance threshold of watershed segmentation.')
     ap.add_argument("-da", "--diagonal", dest = "diagonal", type = float, required = False,  default = math.sqrt(2), help = "diagonal line length(cm) of indiviudal color checker module")
