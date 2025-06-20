@@ -1026,8 +1026,11 @@ def comp_external_contour(orig, thresh):
                 
                 hull = cv2.convexHull(c)
                 hull_area = cv2.contourArea(hull)
-                solidity = float(area)/hull_area
-                print("solidity = {0:.2f}... \n".format(solidity))
+                compactness = float(area)/hull_area
+                
+                solidity = float(area)/(w*h)
+                
+                print("compactness = {0:.2f}... \n".format(solidity))
                 
                 '''
                 extLeft = tuple(c[c[:,:,0].argmin()][0])
@@ -1057,9 +1060,11 @@ def comp_external_contour(orig, thresh):
 
                 print("Width and height are {0:.2f},{1:.2f}... \n".format(w, h))
         
-                compactness = min(max_width,max_height)/max(max_width,max_height)
+                #compactness = min(max_width,max_height)/max(max_width,max_height)
             
-    return trait_img, area, solidity, max_width, max_height, longest_dimension, compactness
+    #return trait_img, area, solidity, max_width, max_height, longest_dimension, compactness
+    
+    return trait_img, area, compactness, solidity, max_width, max_height, longest_dimension
     
     
     
@@ -2246,7 +2251,6 @@ def color_checker_detection(roi_image_checker, result_path):
     
     
     # sort blocks based on area size
-    
     index_keep = []
     
     for (i, block) in enumerate(blocks):
@@ -2257,7 +2261,7 @@ def color_checker_detection(roi_image_checker, result_path):
             index_keep.append(i)
     
     
-    
+    # keep resonable size blocks
     selected_block_width = [block_width[i] for i in index_keep]
     
     selected_block_height = [block_height[i] for i in index_keep]
@@ -2266,6 +2270,7 @@ def color_checker_detection(roi_image_checker, result_path):
     print(selected_block_width)
     print(selected_block_height)
     
+    # compute average widtha nd height
     if len(selected_block_width) > 0:
         average_width = np.mean(selected_block_width)
         print(f"The average width is: {average_width}")
@@ -2280,7 +2285,7 @@ def color_checker_detection(roi_image_checker, result_path):
 
     
     
-    return  average_width, average_height, roi_mask, masked_roi, masked_roi_warped, color_checker_detected, blocks, blocks_overlay
+    return  average_width, average_height, roi_mask, masked_roi, masked_roi_warped, color_checker_detected, blocks, blocks_overlay, block_color_value
     
 
 
@@ -2453,36 +2458,45 @@ def extract_traits(image_file, result_path):
     
     #(avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(roi_image_checker, result_path)
     
-    (average_width, average_height, roi_mask, masked_roi, masked_roi_warped, color_checker_detected, blocks, blocks_overlay) = color_checker_detection(roi_image_checker, result_path)
+    (average_width, average_height, roi_mask, masked_roi, masked_roi_warped, color_checker_detected, blocks, blocks_overlay, block_color_value) = color_checker_detection(roi_image_checker, result_path)
     
     
-    '''
-    ###################################################################
-    x = int(img_width*0.16)
-    y = int(img_height*0.0)
-    w = int(img_width*0.70)
-    h = int(img_height*0.5)
+    # get reference color values from the detected color checker
+    ref_color_yellow = [block_color_value[11]]
     
-    checker_region = region_extracted(orig, x, y, w, h)
+    ref_color_green = [block_color_value[3]]
     
-    colorspace_par = str("HSV")
+    ref_color_brown = [block_color_value[1]]
     
-    channel_par = str("2")
+    
+    ref_color_list = []
+    idx_chosen = [1, 3, 11]
+    
+     # in the order of brown, green, yellow
+     
+    for idx in idx_chosen:
+        
+        ref_color_list.append(block_color_value[idx])
+    
+    
+    # output the values of chosen color blocks as reference to compute the color difference
+    #print("ref_color_yellow = {}, ref_color_green = {} ref_color_brown = {}\n".format(ref_color_yellow, ref_color_green, ref_color_brown))
+    
+    print("ref_color_list = {}\n".format(ref_color_list))
 
-    #thresh_roichecker = color_cluster_seg(region_extracted(orig, x, y, w, h), colorspace_par, channel_par, 2)
+
+    # get the ratio between cm and pixles
+    color_block_size = 2 #CM
     
-    #masked_checker_region = remove(region_extracted(orig, x, y, w, h))
+    avg_pixel_dim = (np.average(average_width) + np.average(average_height))*0.5
     
-    thresh_roichecker = remove(checker_region, only_mask = True)
+    ratio_pixel_cm = avg_pixel_dim/color_block_size
     
-    #apply the mask to get the segmentation of plant
-    masked_checker_region = cv2.bitwise_and(checker_region, checker_region, mask = thresh_roichecker)
+    print("ratio_pixel_cm = {}\n".format(ratio_pixel_cm))
     
-    (avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(masked_checker_region, result_path)
-    '''
 
     
-    
+    # save color checker detection results in debug mode
     if args["debug"] == 1:
 
         file_extension = '.png'
@@ -2506,11 +2520,13 @@ def extract_traits(image_file, result_path):
         
         write_image_output(blocks_overlay, image_save_path, basename, '_color_checker', file_extension)
         
-        #for (i, block) in enumerate(blocks):
+        for (i, block_color) in enumerate(block_color_value):
 
-            #result_file = (image_save_path +  str("{:02d}".format(i)) + '.png')
+            result_file = (image_save_path +  str("{:02d}".format(i)) + '.png')
+            
+            print("ID = {:02d}, block_color = {} \n".format(i, block_color))
 
-            #cv2.imwrite(result_file, block)
+            cv2.imwrite(result_file, blocks[i])
     
 
     ##########################################################################
@@ -2560,7 +2576,6 @@ def extract_traits(image_file, result_path):
 
     #color clustering based plant object segmentation, return plant object mask
     thresh = color_cluster_seg(roi_image, args_colorspace, args_channels, 2)
-    
     
     
     thresh = thresh_adjust(thresh, roi_image)
@@ -2684,7 +2699,7 @@ def extract_traits(image_file, result_path):
 
     
 
-    
+    # color clustering and color difference computation
     ########################################################################################
 
     
@@ -2709,6 +2724,8 @@ def extract_traits(image_file, result_path):
     color_ratio_rec = []
 
     color_diff_list_rec = []
+    
+    ratio_pixel_cm_rec = []
 
 
     print("{} objects are detected\n".format(len(img_thresh_rec)))
@@ -2727,7 +2744,7 @@ def extract_traits(image_file, result_path):
             color_ratio = hex_colors = color_diff_list = [0,0,0]
             
         else:
-            print("Processing object: {}\n".format(idx+1))
+            print("Performing Color analysis for object: {}\n".format(idx+1))
             
             ##########################################################################################################
             # color clustering using pre-defined color cluster value by user
@@ -2741,7 +2758,7 @@ def extract_traits(image_file, result_path):
             
             ###########################################################################################################
              #compute external contour, shape info  
-            (trait_img, area, solidity, max_width, max_height, longest_dimension, compactness) = comp_external_contour(ROI_region, current_thresh)
+            (trait_img, area, compactness, solidity, max_width, max_height, longest_dimension) = comp_external_contour(ROI_region, current_thresh)
 
             
             #############################################################################################################
@@ -2831,12 +2848,10 @@ def extract_traits(image_file, result_path):
             #######################################################################
             
             # get reference color from selected color checker
-            #ref_color = rgb2lab(np.uint8(np.asarray([[rgb_colors_sticker[0]]])))
-            
-            ####################################################
             # compute the distance between the current L*a*b* color value in color checker and the mean of the plant surface image in CIE lab space
+            # output the values of chosen color blocks as reference to compute the color difference
             
-            #print("Detected color checker value in lab: skin = {} foliage = {} purple = {}\n".format(checker_color_value[13], checker_color_value[15], checker_color_value[8]))
+            print("ref_color_yellow = {}, ref_color_green = {} ref_color_brown = {}\n".format(ref_color_yellow, ref_color_green, ref_color_brown))
 
             
             #if len(green_checker_idx) > 0:
@@ -2847,20 +2862,27 @@ def extract_traits(image_file, result_path):
                 #ref_color_list = [(157, 188, 64)]
             
             
-            ref_color_list = [(157, 188, 64)]
-            
             color_diff_list = []
+                        
+            print("rgb_colors = {}\n".format(rgb_colors))
             
-            for ref_color in ref_color_list:
+            #for ref_color in ref_color_list:
+            
+            for i, ref_color in enumerate(ref_color_list):
+            
+                print('rgb_colors of leafe surface = {}, reference color of color checker = {}\n'.format(rgb_colors, ref_color))
                 
-                color_diff_index_value = color_diff_index(ref_color, rgb_colors)
+                # compute the distance of the average of leaf color and the reference colors from color checker in lab color space
+                color_diff_value = color_diff_index(ref_color, rgb_colors)
             
-                print('color_diff_index_value = {0}\n'.format(color_diff_index_value))
+                print('color_diff_value = {0}\n'.format(color_diff_value))
             
-                color_diff_list.append(color_diff_index_value)
+                color_diff_list.append(color_diff_value)
                 
+            
             color_diff_list = np.hstack(color_diff_list)
             
+            print("color_diff_list = {}\n".format(color_diff_list))
 
 
             ###############################################
@@ -2871,7 +2893,10 @@ def extract_traits(image_file, result_path):
                 
             image_skeleton, skeleton = skeleton_bw(current_thresh)
 
-            ############################################## leaf number computation
+            ############################################## 
+            #leaf number computation
+            
+            '''
 
             #min_distance_value = 3
                 
@@ -2902,19 +2927,20 @@ def extract_traits(image_file, result_path):
             
 
             #################################################################
-            n_leaves = int(len(np.unique(labels)))
+            #n_leaves = int(len(np.unique(labels)))
+            
+            n_leaves = 0
             
             #n_leaves = int(len((leaf_index_rec)))
             
             print('number of leaves = {0}\n'.format(n_leaves))
-            
+            '''
 
             longest_axis = max(max_width, max_height)
             
+
             
-            #cm_pixel_ratio = diagonal_line_length/avg_diagonal_length
             
-            cm_pixel_ratio = diameter_circle
             
             ##################################################################
             
@@ -2924,6 +2950,7 @@ def extract_traits(image_file, result_path):
             
             #object_name = basename + "_{}".format(idx + 1)
             
+            # save all the output results
             file_name_rec.append(basename + "_{}".format(idx + 1))
             
             area_rec.append(area)
@@ -2945,7 +2972,8 @@ def extract_traits(image_file, result_path):
             color_ratio_rec.append(color_ratio)
             
             color_diff_list_rec.append(color_diff_list)
-            
+
+            ratio_pixel_cm_rec.append(ratio_pixel_cm)
             
             
             #####################################################################################
@@ -2992,8 +3020,9 @@ def extract_traits(image_file, result_path):
     
 
     
-    return file_name_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec
+    #return file_name_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec
     
+    return file_name_rec, area_rec, compactness_rec, solidity_rec, max_width_rec, max_height_rec, longest_dimension_rec, ratio_pixel_cm_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec
 
     
 
@@ -3045,23 +3074,22 @@ def write_excel_output(trait_file, result_list):
         sheet_leaf = wb.create_sheet()
 
         sheet.cell(row = 1, column = 1).value = 'filename'
-        sheet.cell(row = 1, column = 2).value = 'leaf_area'
-        sheet.cell(row = 1, column = 3).value = 'solidity'
-        sheet.cell(row = 1, column = 4).value = 'max_width'
-        sheet.cell(row = 1, column = 5).value = 'max_height'
-        sheet.cell(row = 1, column = 6).value = 'compactness'
-        sheet.cell(row = 1, column = 7).value = 'longest_dimension'
-        sheet.cell(row = 1, column = 8).value = 'color_cluster_1_hex_value'
-        sheet.cell(row = 1, column = 9).value = 'color_cluster_1_ratio'
-        sheet.cell(row = 1, column = 10).value = 'color_cluster_1_difference'
-        sheet.cell(row = 1, column = 11).value = 'color_cluster_2_hex_value'
-        sheet.cell(row = 1, column = 12).value = 'color_cluster_2_ratio'
-        sheet.cell(row = 1, column = 13).value = 'color_cluster_2_difference'
-        sheet.cell(row = 1, column = 14).value = 'color_cluster_3_hex_value'
-        sheet.cell(row = 1, column = 15).value = 'color_cluster_3_ratio'
-        sheet.cell(row = 1, column = 16).value = 'color_cluster_3_difference'
+        sheet.cell(row = 1, column = 2).value = 'location_ID'
+        sheet.cell(row = 1, column = 3).value = 'leaf_area'
+        sheet.cell(row = 1, column = 4).value = 'compactness_convexhull'
+        sheet.cell(row = 1, column = 5).value = 'compactness_boundingbox'
+        sheet.cell(row = 1, column = 6).value = 'max_width'
+        sheet.cell(row = 1, column = 7).value = 'max_height'
+        sheet.cell(row = 1, column = 8).value = 'longest_dimension'
+        sheet.cell(row = 1, column = 9).value = 'ratio_pixel_cm'
+        sheet.cell(row = 1, column = 10).value = 'average_color_hex_value'
+        sheet.cell(row = 1, column = 11).value = 'color_difference_Brown'
+        sheet.cell(row = 1, column = 12).value = 'color_difference_Green'
+        sheet.cell(row = 1, column = 13).value = 'color_difference_Yellow'
+
         
-        #return image_file_name, area, solidity, max_width, max_height, n_leaves, hex_colors, color_ratio, color_diff_list
+        #['filename', 'location_ID', 'area', 'compactness', 'solidity', 'max_width', 'max_height',  'longest_dimension', 'ratio_pixel_cm', 'average_color_hex_value', 'color_ratio', 'color_difference_Brown', 'color_difference_Green', 'color_difference_Yellow'], tablefmt = 'orgtbl')
+
         
     for row in result_list:
         sheet.append(row)
@@ -3084,7 +3112,7 @@ if __name__ == '__main__':
     ap.add_argument('-c', '--channels', dest = "channels", type = str, required = False, default='2', help='Channel indices to use for clustering, where 0 is the first channel,' 
                                                                        + ' 1 is the second channel, etc. E.g., if BGR color space is used, "02" ' 
                                                                        + 'selects channels B and R. (default "all")')
-    ap.add_argument('-n', '--num_clusters', dest = "num_clusters", type = int, required = False, default = 4,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
+    ap.add_argument('-n', '--num_clusters', dest = "num_clusters", type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-min', '--min_size', dest = "min_size", type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
     ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 1000000,  help = 'max size of object to be segmented.')
     ap.add_argument('-md', '--min_dist', dest = "min_dist", type = int, required = False, default = 35,  help = 'distance threshold of watershed segmentation.')
@@ -3146,11 +3174,14 @@ if __name__ == '__main__':
     
     diagonal_line_length = args['min_dist']
     
+    # cluster number used for segmentation of plant object and background
     num_clusters = args['num_clusters'] 
     
     
     args_colorspace = args['color_space']
     args_channels = args['channels']
+    
+    # cluster number used for color analysis
     args_num_clusters = args['num_clusters']
     
     args_ai_switch = args['ai_switch']
@@ -3183,14 +3214,21 @@ if __name__ == '__main__':
         print("Processing image {} ... \n".format(file_path))
         
         # main pipeline
-        (filename_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec) = extract_traits(image, file_path)
+        #(filename_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec) = extract_traits(image, file_path)
         
-        for idx, (filename, area, solidity, max_width, max_height, compactness, longest_dimension, n_leaves, hex_colors, color_ratio, color_diff_list) in enumerate(zip(filename_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec)):
+        (file_name_rec, area_rec, compactness_rec, solidity_rec, max_width_rec, max_height_rec, longest_dimension_rec, ratio_pixel_cm_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec) = extract_traits(image, file_path)
+        
+        
+        #for idx, (filename, area, solidity, max_width, max_height, compactness, longest_dimension, n_leaves, hex_colors, color_ratio, color_diff_list) in enumerate(zip(filename_rec, area_rec, solidity_rec, max_width_rec, max_height_rec, compactness_rec, longest_dimension_rec, n_leaves_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec)):
+        
+        for idx, (file_name, area, compactness, solidity, max_width, max_height, longest_dimension, ratio_pixel_cm, hex_colors, color_ratio, color_diff_list) in enumerate(zip(file_name_rec, area_rec, compactness_rec, solidity_rec, max_width_rec, max_height_rec, longest_dimension_rec, ratio_pixel_cm_rec, hex_colors_rec, color_ratio_rec, color_diff_list_rec)):
+ 
+            #result_list.append([filename, area, compactness, solidity, max_width, max_height, longest_dimension,
+                            #str(hex_colors[0]), color_ratio[0], color_diff_list[0], color_diff_list[1], color_diff_list[2]])
             
-            result_list.append([filename, area, solidity, max_width, max_height, compactness, longest_dimension, n_leaves, 
-                            str(hex_colors[0]), color_ratio[0], color_diff_list[0], 
-                            str(hex_colors[1]), color_ratio[1], color_diff_list[1], 
-                            str(hex_colors[2]), color_ratio[2], color_diff_list[2]])
+            result_list.append([filename, str(idx+1), area, compactness, solidity, max_width, max_height, longest_dimension, ratio_pixel_cm,
+                            str(hex_colors[0]), color_diff_list[0], color_diff_list[1], color_diff_list[2]])
+            
             
     #########################################################################
     #trait_file = (os.path.dirname(os.path.abspath(file_path)) + '/' + 'trait.xlsx')
@@ -3199,7 +3237,7 @@ if __name__ == '__main__':
     
     #output in command window in a sum table
  
-    table = tabulate(result_list, headers = ['filename', 'area', 'solidity', 'max_width', 'max_height' ,'avg_curv', 'n_leaves', 'cluster 1', 'cluster 2', 'cluster 3', 'cluster 4', 'cluster 1 hex value', 'cluster 2 hex value', 'cluster 3 hex value', 'cluster 4 hex value'], tablefmt = 'orgtbl')
+    table = tabulate(result_list, headers = ['filename', 'location_ID', 'area', 'compactness', 'solidity', 'max_width', 'max_height',  'longest_dimension', 'ratio_pixel_cm', 'average_color_hex_value', 'color_difference_Brown', 'color_difference_Green', 'color_difference_Yellow'], tablefmt = 'orgtbl')
 
     print(table + "\n")
     
