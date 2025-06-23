@@ -13,7 +13,8 @@ Created: 2024-11-29
 
 USAGE:
 
-    python3 smart_rice.py -p /input/ -o /output/
+    python3 smart_rice.py -p /input/ -o /output/ -s HSV -c 0
+    
 
 '''
 
@@ -2486,11 +2487,13 @@ def extract_traits(image_file, result_path):
 
 
     # get the ratio between cm and pixles
-    color_block_size = 2 #CM
+    #block_size = 2 #CM
+    
+    print("Block size in color checker is {} cm\n".format(block_size))
     
     avg_pixel_dim = (np.average(average_width) + np.average(average_height))*0.5
     
-    ratio_pixel_cm = avg_pixel_dim/color_block_size
+    ratio_pixel_cm = avg_pixel_dim/block_size
     
     print("ratio_pixel_cm = {}\n".format(ratio_pixel_cm))
     
@@ -2520,6 +2523,7 @@ def extract_traits(image_file, result_path):
         
         write_image_output(blocks_overlay, image_save_path, basename, '_color_checker', file_extension)
         
+        '''
         for (i, block_color) in enumerate(block_color_value):
 
             result_file = (image_save_path +  str("{:02d}".format(i)) + '.png')
@@ -2527,6 +2531,7 @@ def extract_traits(image_file, result_path):
             print("ID = {:02d}, block_color = {} \n".format(i, block_color))
 
             cv2.imwrite(result_file, blocks[i])
+        '''
     
 
     ##########################################################################
@@ -3116,9 +3121,10 @@ if __name__ == '__main__':
     ap.add_argument('-min', '--min_size', dest = "min_size", type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
     ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 1000000,  help = 'max size of object to be segmented.')
     ap.add_argument('-md', '--min_dist', dest = "min_dist", type = int, required = False, default = 35,  help = 'distance threshold of watershed segmentation.')
-    ap.add_argument("-da", "--diagonal", dest = "diagonal", type = float, required = False,  default = math.sqrt(2), help = "diagonal line length(cm) of indiviudal color checker module")
+    ap.add_argument("-bs", "--block_size", dest = "block_size", type = float, required = False,  default = 2.3, help = "block size in color checker unit:cm")
     ap.add_argument("-d", '--debug', dest = 'debug', type = int, required = False,  default = 1, help = "Whehter save image results or not, 1 = yes, 0 = no")
     ap.add_argument("-ai", '--ai_switch', dest = 'ai_switch', type = int, required = False,  default = 0, help = "Whehter use AI segmentation or not, 1 = yes, 0 = no")
+    
     
     #ap.add_argument("-cc", "--cue_color", dest = "cue_color", type = int, required = False,  default = 0, help="use color cue to detect plant object")
     #ap.add_argument("-cl", "--cue_loc", dest = "cue_loc", type = int, required = False,  default = 0, help="use location cue to detect plant object")
@@ -3172,7 +3178,7 @@ if __name__ == '__main__':
 
     min_distance_value = args['min_dist']
     
-    diagonal_line_length = args['min_dist']
+    block_size = args['block_size']
     
     # cluster number used for segmentation of plant object and background
     num_clusters = args['num_clusters'] 
