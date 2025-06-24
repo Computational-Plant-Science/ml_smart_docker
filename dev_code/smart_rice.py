@@ -2268,8 +2268,8 @@ def color_checker_detection(roi_image_checker, result_path):
     selected_block_height = [block_height[i] for i in index_keep]
     
     
-    print(selected_block_width)
-    print(selected_block_height)
+    #print(selected_block_width)
+    #print(selected_block_height)
     
     # compute average widtha nd height
     if len(selected_block_width) > 0:
@@ -2347,7 +2347,7 @@ def thresh_adjust(thresh, img):
         print("extBot[1] = {}\n".format(extBot[1]))
         
 
-        offset = 80
+        offset = 10  #80
         
         if idx < 1:
             # Rectangle parameters
@@ -2450,14 +2450,20 @@ def extract_traits(image_file, result_path):
     #Color checker detection
     
     #define color checker region
-    x = int(img_width*0.46)
+    #x = int(img_width*0.46)
+    #y = int(img_height*0.056)
+    #w = int(img_width*0.20)
+    #h = int(img_height*0.157)
+    
+    
+    x = int(img_width*0.30)
     y = int(img_height*0.056)
-    w = int(img_width*0.20)
-    h = int(img_height*0.157)
+    w = int(img_width*0.35)
+    h = int(img_height*0.197)
 
     roi_image_checker = region_extracted(orig, x, y, w, h)
     
-    #(avg_width_checker, avg_height_checker, mask_checker, color_checker_detected, color_checker_masked) = color_checker_detection(roi_image_checker, result_path)
+    #write_image_output(roi_image_checker, file_path, basename, '_roi_image_checker', '.png')
     
     (average_width, average_height, roi_mask, masked_roi, masked_roi_warped, color_checker_detected, blocks, blocks_overlay, block_color_value) = color_checker_detection(roi_image_checker, result_path)
     
@@ -2515,7 +2521,7 @@ def extract_traits(image_file, result_path):
         # save segmentation result
         #write_image_output(roi_mask, image_save_path, basename, '_roi_mask', file_extension)
 
-        #write_image_output(masked_roi, image_save_path, basename, '_masked_roi', file_extension)
+        #write_image_output(roi_image_checker, image_save_path, basename, '_roi_image_checker', file_extension)
 
         #write_image_output(masked_roi_warped, image_save_path, basename, '_masked_roi_warped', file_extension)
 
@@ -3057,7 +3063,10 @@ def write_image_output(imagearray, result_path, base_name, addition, ext):
 def write_excel_output(trait_file, result_list):
     
     if os.path.isfile(trait_file):
-        # update values
+        
+        
+        #########################################################################3
+        # update existing excel file
         #Open an xlsx for reading
         wb = openpyxl.load_workbook(trait_file)
 
@@ -3069,6 +3078,11 @@ def write_excel_output(trait_file, result_list):
         #sheet_leaf = wb.create_sheet()
         
         #sheet_leaf.delete_rows(2, sheet_leaf.max_row+1) # for entire sheet
+        #########################################################################
+        
+        
+        # delete old existing file
+        #os.remove(trait_file)
 
 
     else:
@@ -3102,6 +3116,11 @@ def write_excel_output(trait_file, result_list):
 
     #save the csv file
     wb.save(trait_file)
+
+
+
+
+
 
 
 
@@ -3206,13 +3225,15 @@ if __name__ == '__main__':
     
     n_images = len(imgList)
     
-    result_list = []
+    #result_list = []
     
 
     
     
     # loop execute
     for image_id, image in enumerate(imgList):
+        
+        result_list = []
         
         # get file information
         (file_path, filename, basename) = get_file_info(image)
@@ -3234,6 +3255,23 @@ if __name__ == '__main__':
             
             result_list.append([filename, str(idx+1), area, compactness, solidity, max_width, max_height, longest_dimension, ratio_pixel_cm,
                             str(hex_colors[0]), color_diff_list[0], color_diff_list[1], color_diff_list[2]])
+                            
+        
+        
+        # write out result file for each image
+        
+        #trait_file = (result_path + str(pathlib.PurePath(result_path).name) + '_trait.xlsx')
+        trait_file = (result_path + basename + '_trait.xlsx')
+
+        write_excel_output(trait_file, result_list)
+
+
+        if os.path.exists(trait_file):
+            
+            print("Result file was saved at {}\n".format(trait_file))
+        else:
+            print("Error in saving Result file\n")
+        
             
             
     #########################################################################
@@ -3248,6 +3286,8 @@ if __name__ == '__main__':
     print(table + "\n")
     
     
+    
+    '''
     ########################################################################################
     #trait_file = (result_path + str(pathlib.PurePath(result_path).name) + '_trait.xlsx')
     trait_file = (result_path + basename + '_trait.xlsx')
@@ -3261,7 +3301,7 @@ if __name__ == '__main__':
     else:
         print("Error in saving Result file\n")
     
-    '''
+    
     #####################################################################################
     # grants read and write access to all result folders
     print("Make result files accessible...\n")
