@@ -401,19 +401,8 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     ret, thresh = cv2.threshold(kmeansImage,0,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     
+
     '''
-    if args['out_boundary']:
-        thresh_cleaned = (thresh)
-    
-    else:
-        
-        if np.count_nonzero(thresh) > 0:
-            
-            thresh_cleaned = clear_border(thresh)
-        else:
-            thresh_cleaned = thresh
-    '''
-    
     if np.count_nonzero(thresh) > 0:
         
         thresh_cleaned = clear_border(thresh)
@@ -421,7 +410,9 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         
     else:
         thresh_cleaned = thresh
-
+    '''
+    thresh_cleaned = thresh
+    
     (numLabels, labels, stats, centroids) = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
 
     '''
@@ -952,6 +943,10 @@ def comp_external_contour(orig, thresh):
     w=h=0
     
     trait_img_bk = orig
+    
+    max_width = max_height = 0
+    
+    longest_dimension = 0
     
     
     for index, c in enumerate(contours_sorted):
@@ -2459,7 +2454,9 @@ def extract_traits(image_file, result_path):
     x = int(img_width*0.30)
     y = int(img_height*0.056)
     w = int(img_width*0.35)
-    h = int(img_height*0.197)
+    h = int(img_height*0.2)
+    
+    #h = int(img_height*0.257)
 
     roi_image_checker = region_extracted(orig, x, y, w, h)
     
@@ -2881,7 +2878,7 @@ def extract_traits(image_file, result_path):
             
             for i, ref_color in enumerate(ref_color_list):
             
-                print('rgb_colors of leafe surface = {}, reference color of color checker = {}\n'.format(rgb_colors, ref_color))
+                print('rgb_colors of leaf surface = {}, reference color from color checker = {}\n'.format(rgb_colors, ref_color))
                 
                 # compute the distance of the average of leaf color and the reference colors from color checker in lab color space
                 color_diff_value = color_diff_index(ref_color, rgb_colors)
