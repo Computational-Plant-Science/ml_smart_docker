@@ -402,7 +402,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     ret, thresh = cv2.threshold(kmeansImage,0,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     
 
-    '''
+    
     if np.count_nonzero(thresh) > 0:
         
         thresh_cleaned = clear_border(thresh)
@@ -410,8 +410,8 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         
     else:
         thresh_cleaned = thresh
-    '''
-    thresh_cleaned = thresh
+    
+    #thresh_cleaned = thresh
     
     (numLabels, labels, stats, centroids) = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
 
@@ -441,7 +441,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     ################################################################################################
     
 
-    if args['max_size'] == 1000000:
+    if args['max_size'] == 0:
         
         max_size = width*height
     else:
@@ -2342,7 +2342,7 @@ def thresh_adjust(thresh, img):
         print("extBot[1] = {}\n".format(extBot[1]))
         
 
-        offset = 10  #80
+        offset = 10 #80
         
         if idx < 1:
             # Rectangle parameters
@@ -2451,9 +2451,9 @@ def extract_traits(image_file, result_path):
     #h = int(img_height*0.157)
     
     
-    x = int(img_width*0.30)
-    y = int(img_height*0.056)
-    w = int(img_width*0.35)
+    x = int(img_width*0.24)
+    y = int(img_height*0.013)
+    w = int(img_width*0.48)
     h = int(img_height*0.2)
     
     #h = int(img_height*0.257)
@@ -2541,6 +2541,9 @@ def extract_traits(image_file, result_path):
     #Plant region detection (defined as ROI_region)
     
     #roi_image = ROI_region.copy()
+    
+    # blackout region of color checker
+    orig[y:y+h, x:x+w] = (0, 0, 0)
     
     ROI_region = orig.copy()
     
@@ -3135,7 +3138,7 @@ if __name__ == '__main__':
                                                                        + 'selects channels B and R. (default "all")')
     ap.add_argument('-n', '--num_clusters', dest = "num_clusters", type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-min', '--min_size', dest = "min_size", type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
-    ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 1000000,  help = 'max size of object to be segmented.')
+    ap.add_argument('-max', '--max_size', dest = "max_size", type = int, required = False, default = 0,  help = 'max size of object to be segmented.')
     ap.add_argument('-md', '--min_dist', dest = "min_dist", type = int, required = False, default = 35,  help = 'distance threshold of watershed segmentation.')
     ap.add_argument("-bs", "--block_size", dest = "block_size", type = float, required = False,  default = 2.3, help = "block size in color checker unit:cm")
     ap.add_argument("-d", '--debug', dest = 'debug', type = int, required = False,  default = 1, help = "Whehter save image results or not, 1 = yes, 0 = no")
@@ -3191,6 +3194,8 @@ if __name__ == '__main__':
     #parameters
     
     min_size = args['min_size']
+    
+    max_size = args['max_size']
 
     min_distance_value = args['min_dist']
     
