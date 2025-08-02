@@ -401,8 +401,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     ret, thresh = cv2.threshold(kmeansImage,0,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     
-
-    
+    '''
     if np.count_nonzero(thresh) > 0:
         
         thresh_cleaned = clear_border(thresh)
@@ -410,8 +409,10 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         
     else:
         thresh_cleaned = thresh
+    '''
     
-    #thresh_cleaned = thresh
+    
+    thresh_cleaned = thresh
     
     (numLabels, labels, stats, centroids) = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
 
@@ -952,7 +953,7 @@ def comp_external_contour(orig, thresh):
     for index, c in enumerate(contours_sorted):
         
     #for c in contours:
-        if index < 1:
+        if index < 2:
     
             #get the bounding rect
             x, y, w, h = cv2.boundingRect(c)
@@ -2202,7 +2203,8 @@ def color_checker_detection(roi_image_checker, result_path):
     
     roi_mask = cv2.erode(roi_mask_ori, k, 1)
 
-    
+
+
     ################################################################################
 
 
@@ -2443,20 +2445,18 @@ def extract_traits(image_file, result_path):
     
     ####################################################
     #Color checker detection
-    
+    '''
     #define color checker region
-    #x = int(img_width*0.46)
-    #y = int(img_height*0.056)
-    #w = int(img_width*0.20)
-    #h = int(img_height*0.157)
-    
-    
-    x = int(img_width*0.24)
-    y = int(img_height*0.013)
+    x = int(img_width*0.60)
+    y = int(img_height*0.00)
     w = int(img_width*0.48)
-    h = int(img_height*0.2)
+    h = int(img_height*0.30)
+    '''
+    x = int(img_width*0.24)
+    y = int(img_height*0.00)
+    w = int(img_width*0.58)
+    h = int(img_height*0.30)
     
-    #h = int(img_height*0.257)
 
     roi_image_checker = region_extracted(orig, x, y, w, h)
     
@@ -2495,6 +2495,8 @@ def extract_traits(image_file, result_path):
     print("Block size in color checker is {} cm\n".format(block_size))
     
     avg_pixel_dim = (np.average(average_width) + np.average(average_height))*0.5
+    
+    ratio_pixel_cm = 0
     
     ratio_pixel_cm = avg_pixel_dim/block_size
     
@@ -2543,7 +2545,21 @@ def extract_traits(image_file, result_path):
     #roi_image = ROI_region.copy()
     
     # blackout region of color checker
-    orig[y:y+h, x:x+w] = (0, 0, 0)
+    
+    ###############################################################
+    #compute the detected color checker location coordinates
+    contours_color_checker, hier = cv2.findContours(roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # sort the contours based on area from largest to smallest
+    contours_color_checker = sorted(contours_color_checker, key = cv2.contourArea, reverse = True)
+    
+    #get the bounding rect of the detected color checker 
+    (x_cc, y_cc, w_cc, h_cc) = cv2.boundingRect(contours_color_checker[0])
+    
+    orig[y_cc + y : y_cc + y + h_cc, x_cc + x : x_cc + x + w_cc] = (0, 0, 0)
+    
+    
+    #orig[y:y+h, x:x+w] = (0, 0, 0)
     
     ROI_region = orig.copy()
     
