@@ -210,19 +210,19 @@ if __name__ == '__main__':
 
         folder_name = os.path.basename(subfolder_path)
         
-        source_file = subfolder_path + '/' + folder_name + '_trait.xlsx'
+        source_file = current_path + '/' + folder_name + '_trait.xlsx'
         
         
-        target_file = target_path + folder_name + '_trait.xlsx'
+        target_file = subfolder_path + '/Excel_combined/'  + folder_name + '_trait.xlsx'
         
         #target_file = target_path + '_trait.xlsx'
 
         print("Moving file '{}' to '{}'\n".format(source_file, target_file))
         
-        file_move(source_file, target_file)
+        #file_move(source_file, target_file)
         '''
         #######################################################################
-        
+        '''
         
         
         
@@ -238,12 +238,24 @@ if __name__ == '__main__':
         print("Moving file '{}' to '{}'\n".format(source_file, target_file))
         
         file_move(source_file, target_file)
+        '''
+        ###############################################################################
+        '''
+        folder_name = os.path.basename(subfolder_path)
         
+        source_path = subfolder_path + '/' 
         
+        mkpath = os.path.dirname(source_path)  +  '/Excel_combined/' 
+        mkdir(mkpath)
+        #result_path = mkpath + '/'
         
+        #target_file = target_path + '_trait.xlsx'
+
+        print("Creating folder at path '{}'\n".format(mkpath))
         
-        
-        
+        #file_move(source_file, target_file)
+        '''
+        ###############################################################################
         
         
         

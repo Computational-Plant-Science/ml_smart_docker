@@ -2556,7 +2556,7 @@ def extract_traits(image_file, result_path):
     #get the bounding rect of the detected color checker 
     (x_cc, y_cc, w_cc, h_cc) = cv2.boundingRect(contours_color_checker[0])
     
-    orig[y_cc + y : y_cc + y + h_cc, x_cc + x : x_cc + x + w_cc] = (0, 0, 0)
+    #orig[y_cc + y : y_cc + y + h_cc, x_cc + x : x_cc + x + w_cc] = (0, 0, 0)
     
     
     #orig[y:y+h, x:x+w] = (0, 0, 0)

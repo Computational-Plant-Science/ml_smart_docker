@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE:
 
-    python3 combine_excel.py -p /input/ 
+    python3 combine_excel.py -p ~/example/quaternion/species_comp/excels/ 
 
 
 argument:
@@ -27,8 +27,8 @@ import os,fnmatch,os.path
 import argparse
 import shutil
 import pandas as pd
-from pathlib import Path  
-
+from pathlib import Path
+import pathlib
 
 def mkdir(path):
     """Create result folder"""
@@ -107,7 +107,7 @@ def merge_files(ExcelFiles_list, folder_name, subfolder_path):
     combined_file_name = folder_name + '.xlsx'
     
     # save folder construction
-    mkpath = os.path.dirname(subfolder_path) +'/combined'
+    mkpath = os.path.dirname(subfolder_path) +'/Excel_combined'
     mkdir(mkpath)
     save_path = mkpath + '/'
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     
     current_path = args["path"]
     
-    file_path = current_path + "*.xlsx"
+    file_path = current_path + "/*.xlsx"
     
     #type_quaternion = args["type_quaternion"]
     
@@ -163,7 +163,7 @@ if __name__ == '__main__':
             
             excel_file_path = subfolder_path + "/*.xlsx"
             
-            #print(excel_file_path)
+            print(excel_file_path)
             
             
             # get the absolute path of all Excel files 
@@ -187,8 +187,30 @@ if __name__ == '__main__':
         #print()
         #print(sorted(ExcelFiles_list))
         
-        folder_name = 'Mahalanobis'
+        #folder_name = 'Mahalanobis'
+        
+        folder_name = 'Excel_combined'
         
         merge_files(ExcelFiles_list, folder_name, current_path)
 
+    
+    '''
+    excel_file_path = subfolder_path + "/*.xlsx"
+    
+    ExcelFiles_list = sorted(glob.glob(file_path))
+
+    add_file_name(ExcelFiles_list)
+
+    #print(ExcelFiles_list)
+    #print()
+    #print(sorted(ExcelFiles_list))
+
+    #folder_name = 'Mahalanobis'
+    
+    
+
+    folder_name = pathlib.PurePath(current_path).name + '_combined'
+
+    merge_files(ExcelFiles_list, folder_name, current_path)
+    '''
     
